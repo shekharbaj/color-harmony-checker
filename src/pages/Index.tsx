@@ -103,19 +103,31 @@ export default function Index() {
           <div className="grid gap-4 sm:grid-cols-2">
             <Card className="p-4 sm:p-5">
               <ContrastResult result={result} />
-              {!result.aa.normalText && (
+              {(!result.aa.normalText || !result.aaa.normalText) && (
                 <motion.div
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mt-4"
+                  className="mt-4 flex flex-col gap-2"
                 >
-                  <Button
-                    onClick={fix}
-                    className="w-full gap-2 bg-primary text-primary-foreground"
-                  >
-                    <Wand2 className="h-4 w-4" />
-                    Fix for me (AA Normal)
-                  </Button>
+                  {!result.aa.normalText && (
+                    <Button
+                      onClick={() => { const fixed = fixForeground(bg, fg, 4.5); setFg(fixed); toast.success(`Foreground adjusted to ${fixed}`); }}
+                      className="w-full gap-2 bg-primary text-primary-foreground"
+                    >
+                      <Wand2 className="h-4 w-4" />
+                      Fix for AA Normal (≥4.5:1)
+                    </Button>
+                  )}
+                  {!result.aaa.normalText && (
+                    <Button
+                      onClick={() => { const fixed = fixForeground(bg, fg, 7); setFg(fixed); toast.success(`Foreground adjusted to ${fixed}`); }}
+                      variant="outline"
+                      className="w-full gap-2"
+                    >
+                      <Wand2 className="h-4 w-4" />
+                      Fix for AAA Normal (≥7:1)
+                    </Button>
+                  )}
                 </motion.div>
               )}
             </Card>
