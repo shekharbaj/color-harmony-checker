@@ -1,15 +1,18 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeftRight, Wand2, Copy, Accessibility } from "lucide-react";
+import { ArrowLeftRight, Copy, Accessibility, SunMoon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { ColorPicker } from "@/components/ColorPicker";
 import { ContrastResult } from "@/components/ContrastResult";
 import { PreviewCard } from "@/components/PreviewCard";
+import { SuggestionCard } from "@/components/SuggestionCard";
 import { ColorHistory, type ColorPair } from "@/components/ColorHistory";
 import { ExportPanel } from "@/components/ExportPanel";
 import { ContrastMap } from "@/components/ContrastMap";
-import { checkWCAG, fixForeground, toHex } from "@/lib/contrast";
+import { checkWCAG, toHex } from "@/lib/contrast";
 import { toast } from "sonner";
 
 export default function Index() {
