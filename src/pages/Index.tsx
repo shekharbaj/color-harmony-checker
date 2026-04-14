@@ -7,6 +7,8 @@ import { ColorPicker } from "@/components/ColorPicker";
 import { ContrastResult } from "@/components/ContrastResult";
 import { PreviewCard } from "@/components/PreviewCard";
 import { ColorHistory, type ColorPair } from "@/components/ColorHistory";
+import { ExportPanel } from "@/components/ExportPanel";
+import { ContrastMap } from "@/components/ContrastMap";
 import { checkWCAG, fixForeground, toHex } from "@/lib/contrast";
 import { toast } from "sonner";
 
@@ -18,7 +20,6 @@ export default function Index() {
 
   const result = checkWCAG(bg, fg);
 
-  // Add to history on meaningful change (debounced)
   useEffect(() => {
     const timer = setTimeout(() => {
       const prev = prevPairRef.current;
@@ -53,7 +54,6 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="border-b border-border">
         <div className="container mx-auto flex items-center justify-between px-4 py-4 sm:px-6">
           <div className="flex items-center gap-2.5">
@@ -122,6 +122,17 @@ export default function Index() {
 
             <Card className="p-4 sm:p-5">
               <PreviewCard bg={bg} fg={fg} />
+            </Card>
+          </div>
+
+          {/* Contrast Map + Export */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Card className="p-4 sm:p-5">
+              <ContrastMap bg={bg} fg={fg} onSelectFg={setFg} />
+            </Card>
+
+            <Card className="p-4 sm:p-5">
+              <ExportPanel bg={bg} fg={fg} />
             </Card>
           </div>
 
