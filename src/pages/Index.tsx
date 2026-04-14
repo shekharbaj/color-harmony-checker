@@ -1,20 +1,24 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeftRight, Wand2, Copy, Accessibility } from "lucide-react";
+import { ArrowLeftRight, Copy, Accessibility, SunMoon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { ColorPicker } from "@/components/ColorPicker";
 import { ContrastResult } from "@/components/ContrastResult";
 import { PreviewCard } from "@/components/PreviewCard";
+import { SuggestionCard } from "@/components/SuggestionCard";
 import { ColorHistory, type ColorPair } from "@/components/ColorHistory";
 import { ExportPanel } from "@/components/ExportPanel";
 import { ContrastMap } from "@/components/ContrastMap";
-import { checkWCAG, fixForeground, toHex } from "@/lib/contrast";
+import { checkWCAG, toHex } from "@/lib/contrast";
 import { toast } from "sonner";
 
 export default function Index() {
   const [bg, setBg] = useState("#ffffff");
   const [fg, setFg] = useState("#6b7280");
+  const [grayscale, setGrayscale] = useState(false);
   const [history, setHistory] = useState<ColorPair[]>([]);
   const prevPairRef = useRef({ bg, fg });
 
@@ -41,11 +45,10 @@ export default function Index() {
     setFg(bg);
   }, [bg, fg]);
 
-  const fix = useCallback(() => {
-    const fixed = fixForeground(bg, fg);
-    setFg(fixed);
-    toast.success(`Foreground adjusted to ${fixed}`);
-  }, [bg, fg]);
+  const handleApplySuggestion = useCallback((hex: string) => {
+    setFg(hex);
+    toast.success(`Foreground adjusted to ${hex}`);
+  }, []);
 
   const copyHex = useCallback(() => {
     navigator.clipboard.writeText(`BG: ${toHex(bg)} | FG: ${toHex(fg)}`);
@@ -65,10 +68,23 @@ export default function Index() {
               <p className="text-xs text-muted-foreground">WCAG 2.1 Compliance</p>
             </div>
           </div>
-          <Button variant="outline" size="sm" className="gap-1.5" onClick={copyHex}>
-            <Copy className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Copy Colors</span>
-          </Button>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Switch
+                id="grayscale"
+                checked={grayscale}
+                onCheckedChange={setGrayscale}
+              />
+              <Label htmlFor="grayscale" className="text-xs text-muted-foreground cursor-pointer">
+                <SunMoon className="mr-1 inline h-3.5 w-3.5" />
+                Grayscale
+              </Label>
+            </div>
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={copyHex}>
+              <Copy className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Copy Colors</span>
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -99,43 +115,26 @@ export default function Index() {
             </Card>
           </div>
 
-          {/* Results + Preview */}
+          {/* Results + Suggestions */}
           <div className="grid gap-4 sm:grid-cols-2">
             <Card className="p-4 sm:p-5">
               <ContrastResult result={result} />
-              {(!result.aa.normalText || !result.aaa.normalText) && (
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mt-4 flex flex-col gap-2"
-                >
-                  {!result.aa.normalText && (
-                    <Button
-                      onClick={() => { const fixed = fixForeground(bg, fg, 4.5); setFg(fixed); toast.success(`Foreground adjusted to ${fixed}`); }}
-                      className="w-full gap-2 bg-primary text-primary-foreground"
-                    >
-                      <Wand2 className="h-4 w-4" />
-                      Fix for AA Normal (≥4.5:1)
-                    </Button>
-                  )}
-                  {!result.aaa.normalText && (
-                    <Button
-                      onClick={() => { const fixed = fixForeground(bg, fg, 7); setFg(fixed); toast.success(`Foreground adjusted to ${fixed}`); }}
-                      variant="outline"
-                      className="w-full gap-2"
-                    >
-                      <Wand2 className="h-4 w-4" />
-                      Fix for AAA Normal (≥7:1)
-                    </Button>
-                  )}
-                </motion.div>
-              )}
             </Card>
 
             <Card className="p-4 sm:p-5">
-              <PreviewCard bg={bg} fg={fg} />
+              <SuggestionCard bg={bg} fg={fg} onApply={handleApplySuggestion} />
+              {result.aa.normalText && result.aaa.normalText && (
+                <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                  ✅ All WCAG criteria pass — no suggestions needed.
+                </p>
+              )}
             </Card>
           </div>
+
+          {/* Preview */}
+          <Card className="p-4 sm:p-5" style={{ filter: grayscale ? "grayscale(100%)" : "none" }}>
+            <PreviewCard bg={bg} fg={fg} />
+          </Card>
 
           {/* Contrast Map + Export */}
           <div className="grid gap-4 sm:grid-cols-2">

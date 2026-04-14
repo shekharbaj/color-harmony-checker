@@ -27,28 +27,84 @@ export function checkWCAG(bg: string, fg: string): WCAGResult {
   };
 }
 
+export interface FixResult {
+  hex: string;
+  originalL: number;
+  newL: number;
+  deltaL: number;
+  direction: "lighter" | "darker";
+  achieved: boolean;
+}
+
 export function fixForeground(bg: string, fg: string, targetRatio = 4.5): string {
+  return fixForegroundDetailed(bg, fg, targetRatio).hex;
+}
+
+export function fixForegroundDetailed(bg: string, fg: string, targetRatio = 4.5): FixResult {
   try {
     const bgColor = chroma(bg);
-    let fgColor = chroma(fg);
-    const bgLum = bgColor.luminance();
+    const fgColor = chroma(fg);
+    const [h, s, l] = fgColor.hsl();
+    const safeH = isNaN(h) ? 0 : h;
+    const safeS = isNaN(s) ? 0 : s;
+    const safeL = isNaN(l) ? 0.5 : l;
+    const bgL = bgColor.luminance();
+    const fgL = fgColor.luminance();
 
-    // Try adjusting lightness in the right direction
-    const fgLum = fgColor.luminance();
-    const shouldDarken = bgLum > 0.5;
+    // Direction: if fg is lighter than bg, go lighter; else go darker
+    const shouldLighten = fgL >= bgL;
+    const step = 0.01; // 1% increments
 
+    let currentL = safeL;
     for (let i = 0; i < 100; i++) {
-      const currentRatio = getContrastRatio(bg, fgColor.hex());
-      if (currentRatio >= targetRatio) return fgColor.hex();
-
-      const [h, s, l] = fgColor.hsl();
-      const step = shouldDarken ? -0.01 : 0.01;
-      const newL = Math.max(0, Math.min(1, (isNaN(l) ? 0.5 : l) + step));
-      fgColor = chroma.hsl(isNaN(h) ? 0 : h, isNaN(s) ? 0 : s, newL);
+      const candidate = chroma.hsl(safeH, safeS, currentL);
+      const ratio = getContrastRatio(bg, candidate.hex());
+      if (ratio >= targetRatio) {
+        return {
+          hex: candidate.hex(),
+          originalL: Math.round(safeL * 100),
+          newL: Math.round(currentL * 100),
+          deltaL: Math.round((currentL - safeL) * 100),
+          direction: shouldLighten ? "lighter" : "darker",
+          achieved: true,
+        };
+      }
+      currentL = shouldLighten ? currentL + step : currentL - step;
+      currentL = Math.max(0, Math.min(1, currentL));
+      // If we hit the boundary without finding a solution, break
+      if ((shouldLighten && currentL >= 1) || (!shouldLighten && currentL <= 0)) break;
     }
-    return fgColor.hex();
+
+    // Fallback: try the opposite direction
+    currentL = safeL;
+    const fallbackLighten = !shouldLighten;
+    for (let i = 0; i < 100; i++) {
+      currentL = fallbackLighten ? currentL + step : currentL - step;
+      currentL = Math.max(0, Math.min(1, currentL));
+      const candidate = chroma.hsl(safeH, safeS, currentL);
+      const ratio = getContrastRatio(bg, candidate.hex());
+      if (ratio >= targetRatio) {
+        return {
+          hex: candidate.hex(),
+          originalL: Math.round(safeL * 100),
+          newL: Math.round(currentL * 100),
+          deltaL: Math.round((currentL - safeL) * 100),
+          direction: fallbackLighten ? "lighter" : "darker",
+          achieved: true,
+        };
+      }
+    }
+
+    return {
+      hex: fg,
+      originalL: Math.round(safeL * 100),
+      newL: Math.round(safeL * 100),
+      deltaL: 0,
+      direction: shouldLighten ? "lighter" : "darker",
+      achieved: false,
+    };
   } catch {
-    return fg;
+    return { hex: fg, originalL: 50, newL: 50, deltaL: 0, direction: "darker", achieved: false };
   }
 }
 
