@@ -85,6 +85,8 @@ export default function Index() {
               <span className="hidden sm:inline">Copy Colors</span>
             </Button>
           </div>
+        </div>
+      </header>
 
       <main className="container mx-auto px-4 py-6 sm:px-6 sm:py-10">
         <div className="mx-auto max-w-5xl space-y-6 sm:space-y-8">
